@@ -7,12 +7,13 @@ const mysql_1 = __importDefault(require("mysql"));
 const express = require('express');
 var app = express();
 const bodyparser = require('body-parser');
+require('dotenv').config();
 app.use(bodyparser.urlencoded({ extended: false }));
 app.use(bodyparser.json());
 var mysqlConnection = mysql_1.default.createConnection({
     host: 'localhost',
-    user: 'root',
-    password: 'Dung891995',
+    user: process.env.USER,
+    password: process.env.PASS,
     database: 'demo',
     multipleStatements: true
 });
@@ -22,7 +23,7 @@ mysqlConnection.connect((err) => {
     else
         console.log('DB connection failed \n Error : ' + JSON.stringify(err, undefined, 2));
 });
-app.listen(3000, () => console.log('Express server is runnig at port no : 3000'));
+app.listen(process.env.PORT, () => console.log('Express server is runnig at port no : 3000'));
 app.get('/user', (req, res) => {
     mysqlConnection.query('SELECT * FROM users', (err, rows) => {
         if (!err)
@@ -44,10 +45,29 @@ app.get('/postofuser/:userid', (req, res) => {
 app.post('/createuser/', (req, res) => {
     let name = req.body.name;
     let age = req.body.age;
-    let sql = 'INSERT INTO users (name , age ) VALUES (' + name + ', ' + age + ')';
+    let sql = `INSERT INTO users (name , age ) VALUES ('${name}', '${age}')`;
     mysqlConnection.query(sql, (err, rows) => {
         if (!err)
-            res.json(rows);
+            res.json('them thanh cong', rows);
+        else
+            console.log(err);
+    });
+});
+app.put('/updateuser/:userid', (req, res) => {
+    let name = req.body.name;
+    let age = req.body.age;
+    let sql = `UPDATE users SET name = '${name}', age = '${age}' WHERE UserId = ${req.params.userid}`;
+    mysqlConnection.query(sql, (err, rows) => {
+        if (!err)
+            res.json('sua thanh cong');
+        else
+            console.log(err);
+    });
+});
+app.delete('/deleteuser/:userid', (req, res) => {
+    mysqlConnection.query(`DELETE FROM users WHERE UserId = ${req.params.userid}`, (err, rows) => {
+        if (!err)
+            res.json('xoa thanh cong');
         else
             console.log(err);
     });

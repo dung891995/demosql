@@ -2,13 +2,15 @@ import mysql, { MysqlError } from 'mysql'
 const express = require('express');
 var app = express();
 const bodyparser = require('body-parser');
+require('dotenv').config()
 app.use(bodyparser.urlencoded({ extended: false }))
 app.use(bodyparser.json());
 
+
 var mysqlConnection = mysql.createConnection({
     host: 'localhost',
-    user: 'root',
-    password: 'Dung891995',
+    user: process.env.USER,
+    password: process.env.PASS,
     database: 'demo',
     multipleStatements: true
 });
@@ -21,7 +23,7 @@ mysqlConnection.connect((err: MysqlError) => {
 });
 
 
-app.listen(3000, () => console.log('Express server is runnig at port no : 3000'));
+app.listen(process.env.PORT, () => console.log('Express server is runnig at port no : 3000'));
 
 app.get('/user', (req: any, res: any) => {
     mysqlConnection.query('SELECT * FROM users', (err, rows) => {
@@ -33,26 +35,48 @@ app.get('/user', (req: any, res: any) => {
 });
 
 app.get('/postofuser/:userid', (req: any, res: any) => {
-var userId = req.params.userid;
-let sql = 'SELECT users.UserId,users.name, post.PostId, post.Title, post.Content FROM users  INNER JOIN post ON users.UserId =' + userId;
+    var userId = req.params.userid;
+    let sql = 'SELECT users.UserId,users.name, post.PostId, post.Title, post.Content FROM users  INNER JOIN post ON users.UserId =' + userId;
     mysqlConnection.query(sql, (err, rows) => {
         if (!err)
-        res.json(rows);
-    else
-        console.log(err);
-})
-});
-app.post('/createuser/', (req: any, res: any) => {
-    let name = req.body.name;
-    let age = req.body.age
-    let sql = 'INSERT INTO users (name , age ) VALUES (' + name + ', ' + age + ')'
-        mysqlConnection.query(sql, (err, rows) => {
-            if (!err)
             res.json(rows);
         else
             console.log(err);
     })
+});
+app.post('/createuser/', (req: any, res: any) => {
+    let name = req.body.name;
+    let age = req.body.age
+    let sql = `INSERT INTO users (name , age ) VALUES ('${name}', '${age}')`;
+    mysqlConnection.query(sql, (err, rows) => {
+        if (!err)
+            res.json('them thanh cong', rows);
+        else
+            console.log(err);
+    })
+});
+
+app.put('/updateuser/:userid', (req: any, res: any) => {
+    let name = req.body.name;
+    let age = req.body.age;
+    let sql = `UPDATE users SET name = '${name}', age = '${age}' WHERE UserId = ${req.params.userid}`;
+    mysqlConnection.query(sql, (err, rows) => {
+        if (!err)
+            res.json('sua thanh cong');
+        else
+            console.log(err);
+    })
+});
+
+app.delete('/deleteuser/:userid', (req:any, res:any) => {
+    mysqlConnection.query(`DELETE FROM users WHERE UserId = ${req.params.userid}`, (err, rows) => {
+        if (!err)
+            res.json('xoa thanh cong');
+        else
+            console.log(err);
     });
+});
+
 
 
 
