@@ -4,6 +4,8 @@ import mysql, { MysqlError } from "mysql";
 import bodyparser from 'body-parser';
 import bcrypt from "bcrypt";
 import dotenv from "dotenv";
+import jwt from "jsonwebtoken";
+import {authToken} from "./auth";
 dotenv.config();
 app.use(bodyparser.urlencoded({ extended: false }))
 app.use(bodyparser.json());
@@ -35,7 +37,7 @@ app.get('/user', (req: any, res: any) => {
     })
 });
 
-app.get('/postofuser/:userid', (req: any, res: any) => {
+app.get('/postofuser/:userid',authToken, (req: any, res: any) => {
     var userId = req.params.userid;
     let sql = 'SELECT users.UserId,users.name, post.PostId, post.Title, post.Content FROM users  INNER JOIN post ON users.UserId =' + userId;
     mysqlConnection.query(sql, (err, rows) => {
@@ -49,16 +51,40 @@ app.post('/createuser/', (req: any, res: any) => {
     let name = req.body.name;
     let age = req.body.age;
     let password = req.body.password;
-    bcrypt.hash(password, saltRounds, function(err, hash) {
+    bcrypt.hash(password, saltRounds, function (err, hash) {
         let sql = `INSERT INTO users (name , age , password ) VALUES ('${name}', '${age}', '${hash}')`;
-         mysqlConnection.query(sql, (err, rows) => {
-        if (!err)
-            res.json('them thanh cong');
-        else
-            console.log(err);
-    })
+        mysqlConnection.query(sql, (err, rows) => {
+            if (!err)
+                res.json('them thanh cong');
+            else
+                console.log(err);
+        })
     });
-    
+
+});
+
+app.post('/login', function (req: any, res: any) {
+    let name = req.body.name;
+    let password = req.body.password;
+    let sql = `SELECT * FROM users WHERE name='${name}'`
+    console.log(sql);
+    mysqlConnection.query(sql, (err, rows) => {
+        if (!err) {
+            bcrypt.compare(password, rows[0].password).then(function (result) {
+                if (result) {
+                    var token = jwt.sign({ id: rows[0].UserId }, "dung891995", {
+                        expiresIn: "1d",
+                    });
+                    res.cookie("token", token, { maxAge: 1000 * 3600 * 12 });
+                    res.json('dang nhap thanh cong');
+                }
+            })
+        }
+        else {
+            console.log(err);
+        }
+    })
+
 });
 
 app.put('/updateuser/:userid', (req: any, res: any) => {
@@ -73,7 +99,7 @@ app.put('/updateuser/:userid', (req: any, res: any) => {
     })
 });
 
-app.delete('/deleteuser/:userid', (req:any, res:any) => {
+app.delete('/deleteuser/:userid', (req: any, res: any) => {
     mysqlConnection.query(`DELETE FROM users WHERE UserId = ${req.params.userid}`, (err, rows) => {
         if (!err)
             res.json('xoa thanh cong');
