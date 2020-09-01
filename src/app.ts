@@ -1,12 +1,13 @@
-import mysql, { MysqlError } from 'mysql'
-const express = require('express');
+import express from "express";
 var app = express();
-const bodyparser = require('body-parser');
-require('dotenv').config()
+import mysql, { MysqlError } from "mysql";
+import bodyparser from 'body-parser';
+import bcrypt from "bcrypt";
+import dotenv from "dotenv";
+dotenv.config();
 app.use(bodyparser.urlencoded({ extended: false }))
 app.use(bodyparser.json());
-
-
+const saltRounds = 10;
 var mysqlConnection = mysql.createConnection({
     host: 'localhost',
     user: process.env.USER,
@@ -46,14 +47,18 @@ app.get('/postofuser/:userid', (req: any, res: any) => {
 });
 app.post('/createuser/', (req: any, res: any) => {
     let name = req.body.name;
-    let age = req.body.age
-    let sql = `INSERT INTO users (name , age ) VALUES ('${name}', '${age}')`;
-    mysqlConnection.query(sql, (err, rows) => {
+    let age = req.body.age;
+    let password = req.body.password;
+    bcrypt.hash(password, saltRounds, function(err, hash) {
+        let sql = `INSERT INTO users (name , age , password ) VALUES ('${name}', '${age}', '${hash}')`;
+         mysqlConnection.query(sql, (err, rows) => {
         if (!err)
-            res.json('them thanh cong', rows);
+            res.json('them thanh cong');
         else
             console.log(err);
     })
+    });
+    
 });
 
 app.put('/updateuser/:userid', (req: any, res: any) => {
